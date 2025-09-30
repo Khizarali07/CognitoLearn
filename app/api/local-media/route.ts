@@ -63,7 +63,7 @@ export async function GET(req: Request) {
     }
 
     // Basic streaming response (no range support yet)
-    const stream = fs.createReadStream(resolved);
+    const nodeStream = fs.createReadStream(resolved);
 
     const ext = path.extname(resolved).toLowerCase();
     let contentType = "application/octet-stream";
@@ -77,7 +77,32 @@ export async function GET(req: Request) {
       "Accept-Ranges": "bytes",
     };
 
-    return new Response(stream as any, { status: 200, headers });
+    // Node Readable -> Web ReadableStream conversion for the Response body.
+    // Node 18+ provides `stream.Readable.toWeb`; use it when available.
+    const nodeStreamModule = (await import("stream")) as unknown as {
+      Readable?: {
+        toWeb?: (r: NodeJS.ReadableStream) => ReadableStream<Uint8Array>;
+      };
+    };
+    let body: ReadableStream<Uint8Array> | Uint8Array;
+    if (
+      nodeStreamModule.Readable &&
+      typeof nodeStreamModule.Readable.toWeb === "function"
+    ) {
+      body = nodeStreamModule.Readable.toWeb(
+        nodeStream as unknown as NodeJS.ReadableStream
+      );
+    } else {
+      // Fallback: buffer the file into memory (small files only). This keeps
+      // behavior correct but is not ideal for very large videos.
+      const chunks: Buffer[] = [];
+      for await (const chunk of nodeStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      body = Buffer.concat(chunks);
+    }
+
+    return new Response(body as BodyInit, { status: 200, headers });
   } catch (error) {
     console.error("Local media streaming error:", error);
     return new Response(JSON.stringify({ error: String(error) }), {

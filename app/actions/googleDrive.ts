@@ -46,11 +46,10 @@ async function createDriveClient() {
 
   if (clientEmail && rawPrivateKey) {
     const privateKey = rawPrivateKey.replace(/\\n/g, "\n");
-    const jwtClient = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
-    } as any);
+    // Use the positional constructor overload to avoid casting to `any`.
+    const jwtClient = new google.auth.JWT(clientEmail, undefined, privateKey, [
+      "https://www.googleapis.com/auth/drive.readonly",
+    ]);
 
     await jwtClient.authorize();
     return google.drive({ version: "v3", auth: jwtClient });
@@ -91,7 +90,7 @@ export async function extractGoogleDriveVideos(
   try {
     // When service account auth was used, auth is part of the client.
     // If we're using an API key, include `key` in the params.
-    const params: any = {
+    const params: Record<string, unknown> = {
       q,
       fields: "files(id,name,mimeType,webViewLink,webContentLink)",
       pageSize: 1000,
@@ -101,12 +100,25 @@ export async function extractGoogleDriveVideos(
       params.key = process.env.GOOGLE_API_KEY;
     }
 
-    const res = await drive.files.list(params);
-    const files = res.data.files || [];
+    // Call the files.list and narrow the response shape without using `any`.
+    const res = (await drive.files.list(
+      params as unknown as Record<string, unknown>
+    )) as unknown;
 
-    const extracted: ExtractedVideo[] = files.map((f: any) => ({
-      id: f.id,
-      title: f.name || `Video ${f.id}`,
+    const resTyped = (res as {
+      data?: {
+        files?: Array<{ id?: string; name?: string; mimeType?: string }>;
+      };
+    }) || { data: { files: [] } };
+    const filesTyped = (resTyped.data?.files ?? []) as Array<{
+      id?: string;
+      name?: string;
+      mimeType?: string;
+    }>;
+
+    const extracted: ExtractedVideo[] = filesTyped.map((f) => ({
+      id: f.id ?? "",
+      title: f.name ?? `Video ${f.id ?? ""}`,
       embedUrl: `https://drive.google.com/file/d/${f.id}/preview`,
       mimeType: f.mimeType,
     }));
@@ -119,7 +131,7 @@ export async function extractGoogleDriveVideos(
       if (!course) throw new Error("Course not found");
 
       // Prepare Video docs
-      const createdVideos: any[] = [];
+      const createdVideos: unknown[] = [];
       for (let i = 0; i < extracted.length; i++) {
         const v = extracted[i];
         const videoDoc = await Video.create({
@@ -129,13 +141,16 @@ export async function extractGoogleDriveVideos(
           order: (course.totalVideos || 0) + i,
           isCompleted: false,
         });
-        createdVideos.push(videoDoc);
+        createdVideos.push(videoDoc as unknown);
       }
 
       // Update course with new videos
       const newTotal = (course.totalVideos || 0) + createdVideos.length;
+      // Narrow created documents to objects with _id so TypeScript can access the property.
+      const createdIds = createdVideos.map((c) => (c as { _id?: unknown })._id);
+
       await Course.findByIdAndUpdate(course._id, {
-        $push: { videos: { $each: createdVideos.map((c) => c._id) } },
+        $push: { videos: { $each: createdIds } },
         totalVideos: newTotal,
       });
 

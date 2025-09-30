@@ -16,10 +16,15 @@ export default function FolderPicker({
   const handleFolderPick = async () => {
     try {
       // Check if the File System Access API is supported
-      if ("showDirectoryPicker" in window) {
-        const directoryHandle = await (window as any).showDirectoryPicker({
-          mode: "read",
-        });
+      const win = window as unknown as {
+        showDirectoryPicker?: (options?: {
+          mode?: "read" | "readwrite";
+        }) => Promise<{ name: string }>;
+      };
+
+      if (typeof win.showDirectoryPicker === "function") {
+        // Browser File System Access API typing is not available in all TS setups.
+        const directoryHandle = await win.showDirectoryPicker({ mode: "read" });
 
         // For security reasons browsers do NOT expose the absolute file system path
         // The returned handle provides the directory name only. This cannot be used
@@ -39,7 +44,8 @@ export default function FolderPicker({
         );
       }
     } catch (error) {
-      if ((error as any).name !== "AbortError") {
+      const e = error as { name?: string } | undefined;
+      if (e?.name !== "AbortError") {
         console.error("Error picking folder:", error);
         alert("Error selecting folder. Please try typing the path manually.");
       }
