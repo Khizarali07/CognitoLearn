@@ -1,10 +1,5 @@
-import SignUpForm from "@/components/SignUpForm";
+import SignUpForm from "@/components/auth/SignUpForm";
 
-export default function SignUpPage({
-  searchParams,
-}: {
-  searchParams?: { message?: string };
-}) {
-  const message = searchParams?.message ?? undefined;
-  return <SignUpForm message={message} />;
+export default function SignUpPage() {
+  return <SignUpForm />;
 }

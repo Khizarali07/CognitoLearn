@@ -1,10 +1,5 @@
-import LoginForm from "@/components/LoginForm";
+import LoginForm from "@/components/auth/LoginForm";
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams?: { message?: string };
-}) {
-  const message = searchParams?.message ?? undefined;
-  return <LoginForm message={message} />;
+export default function LoginPage() {
+  return <LoginForm />;
 }

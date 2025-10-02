@@ -13,6 +13,43 @@ type ExtractedVideo = {
 };
 
 /**
+ * Extract numeric prefix from a video title for sorting.
+ * Handles formats like: "001 Title", "01 Title", "1 Title", "1. Title", etc.
+ */
+function extractNumericPrefix(title: string): number {
+  // Match numeric prefix patterns: "001", "01", "1", "1.", "1-", etc.
+  const match = title.match(/^(\d+)[\s\.\-_]*/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  return Infinity; // Put items without numeric prefix at the end
+}
+
+/**
+ * Natural sort function for video titles with numeric prefixes.
+ * Sorts by numeric prefix first, then alphabetically.
+ */
+function naturalSort(a: ExtractedVideo, b: ExtractedVideo): number {
+  const aNum = extractNumericPrefix(a.title);
+  const bNum = extractNumericPrefix(b.title);
+
+  // If both have numeric prefixes, sort by number
+  if (aNum !== Infinity && bNum !== Infinity) {
+    return aNum - bNum;
+  }
+
+  // If only one has a numeric prefix, it comes first
+  if (aNum !== Infinity) return -1;
+  if (bNum !== Infinity) return 1;
+
+  // If neither has a numeric prefix, sort alphabetically
+  return a.title.localeCompare(b.title, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+/**
  * Parse a Drive folder URL or plain ID and return the folder ID if present.
  */
 function parseFolderId(linkOrId: string): string | null {
@@ -122,6 +159,9 @@ export async function extractGoogleDriveVideos(
       embedUrl: `https://drive.google.com/file/d/${f.id}/preview`,
       mimeType: f.mimeType,
     }));
+
+    // Sort videos by numeric prefix (001, 01, 1, etc.) for proper ordering
+    extracted.sort(naturalSort);
 
     // If a courseId was provided, persist the videos to MongoDB
     if (courseId) {

@@ -10,17 +10,22 @@ import { hashPassword, verifyPassword } from "@/lib/auth";
 import { sendResetPasswordEmail } from "@/lib/email";
 import { randomBytes } from "crypto";
 
-export async function signUp(formData: FormData) {
+type ActionResult = {
+  success?: string;
+  error?: string;
+};
+
+export async function signUp(formData: FormData): Promise<ActionResult> {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
   if (!name || !email || !password) {
-    throw new Error("All fields are required");
+    return { error: "All fields are required" };
   }
 
   if (password.length < 6) {
-    throw new Error("Password must be at least 6 characters");
+    return { error: "Password must be at least 6 characters" };
   }
 
   try {
@@ -29,8 +34,7 @@ export async function signUp(formData: FormData) {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      redirect("/signup?message=User with this email already exists");
-      return;
+      return { error: "User with this email already exists" };
     }
 
     // Hash password and create user
@@ -42,7 +46,7 @@ export async function signUp(formData: FormData) {
     });
 
     console.log("User created successfully:", user.email);
-    redirect("/login?message=Account created successfully");
+    return { success: "Account created successfully! Please sign in." };
   } catch (error) {
     console.error("Sign up error:", error);
 
@@ -50,22 +54,23 @@ export async function signUp(formData: FormData) {
       error instanceof Error &&
       error.message.includes("MongoDB connection failed")
     ) {
-      redirect(
-        "/signup?message=Database connection error. Please contact administrator."
-      );
-      return;
+      return {
+        error: "Database connection error. Please contact administrator.",
+      };
     }
 
-    throw error;
+    return { error: "An error occurred. Please try again." };
   }
 }
 
-export async function signIn(formData: FormData) {
+export async function signIn(
+  formData: FormData
+): Promise<ActionResult | never> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
   if (!email || !password) {
-    throw new Error("Email and password are required");
+    return { error: "Email and password are required" };
   }
 
   try {
@@ -74,15 +79,13 @@ export async function signIn(formData: FormData) {
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      redirect("/login?message=Invalid email or password");
-      return;
+      return { error: "Invalid email or password" };
     }
 
     // Verify password
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
-      redirect("/login?message=Invalid email or password");
-      return;
+      return { error: "Invalid email or password" };
     }
 
     // Create JWT token
@@ -109,6 +112,8 @@ export async function signIn(formData: FormData) {
 
     console.log("User signed in successfully:", user.email);
     console.log("JWT Token set in cookie");
+
+    // Redirect to dashboard after successful sign-in
     redirect("/dashboard");
   } catch (error) {
     // Don't log NEXT_REDIRECT as an error - it's normal behavior
@@ -122,21 +127,22 @@ export async function signIn(formData: FormData) {
       error instanceof Error &&
       error.message.includes("MongoDB connection failed")
     ) {
-      redirect(
-        "/login?message=Database connection error. Please contact administrator."
-      );
-      return;
+      return {
+        error: "Database connection error. Please contact administrator.",
+      };
     }
 
-    throw error;
+    return { error: "An error occurred. Please try again." };
   }
 }
 
-export async function requestPasswordReset(formData: FormData) {
+export async function requestPasswordReset(
+  formData: FormData
+): Promise<ActionResult> {
   const email = formData.get("email") as string;
 
   if (!email) {
-    throw new Error("Email is required");
+    return { error: "Email is required" };
   }
 
   try {
@@ -146,10 +152,10 @@ export async function requestPasswordReset(formData: FormData) {
     const user = await User.findOne({ email });
     if (!user) {
       // Don't reveal if email exists or not for security
-      redirect(
-        "/forgot-password?message=If an account with this email exists, you will receive a password reset link."
-      );
-      return;
+      return {
+        success:
+          "If an account with this email exists, you will receive a password reset link.",
+      };
     }
 
     // Generate reset token
@@ -168,9 +174,7 @@ export async function requestPasswordReset(formData: FormData) {
     await sendResetPasswordEmail(email, resetToken);
 
     console.log("Password reset email sent to:", email);
-    redirect(
-      "/forgot-password?message=Password reset link sent to your email."
-    );
+    return { success: "Password reset link sent to your email." };
   } catch (error) {
     console.error("Password reset error:", error);
 
@@ -178,31 +182,28 @@ export async function requestPasswordReset(formData: FormData) {
       error instanceof Error &&
       error.message.includes("MongoDB connection failed")
     ) {
-      redirect(
-        "/forgot-password?message=Database connection error. Please try again later."
-      );
-      return;
+      return { error: "Database connection error. Please try again later." };
     }
 
-    throw error;
+    return { error: "An error occurred. Please try again." };
   }
 }
 
-export async function resetPassword(formData: FormData) {
+export async function resetPassword(formData: FormData): Promise<ActionResult> {
   const token = formData.get("token") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!token || !password || !confirmPassword) {
-    throw new Error("All fields are required");
+    return { error: "All fields are required" };
   }
 
   if (password !== confirmPassword) {
-    throw new Error("Passwords do not match");
+    return { error: "Passwords do not match" };
   }
 
   if (password.length < 6) {
-    throw new Error("Password must be at least 6 characters");
+    return { error: "Password must be at least 6 characters" };
   }
 
   try {
@@ -215,13 +216,13 @@ export async function resetPassword(formData: FormData) {
     });
 
     if (!resetRecord) {
-      throw new Error("Invalid or expired reset token");
+      return { error: "Invalid or expired reset token" };
     }
 
     // Find user and update password
     const user = await User.findById(resetRecord.userId);
     if (!user) {
-      throw new Error("User not found");
+      return { error: "User not found" };
     }
 
     // Hash new password
@@ -232,12 +233,13 @@ export async function resetPassword(formData: FormData) {
     await PasswordReset.findByIdAndDelete(resetRecord._id);
 
     console.log("Password reset successfully for:", user.email);
-    redirect(
-      "/login?message=Password reset successfully. Please login with your new password."
-    );
+    return {
+      success:
+        "Password reset successfully! Please sign in with your new password.",
+    };
   } catch (error) {
     console.error("Reset password error:", error);
-    throw error;
+    return { error: "An error occurred. Please try again." };
   }
 }
 
@@ -248,7 +250,7 @@ export async function signOut() {
     cookieStore.delete("auth-token");
 
     console.log("User signed out");
-    redirect("/login?message=You have been logged out successfully.");
+    redirect("/login");
   } catch (error) {
     console.error("Sign out error:", error);
     redirect("/login");
