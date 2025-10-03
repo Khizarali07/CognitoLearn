@@ -5,6 +5,7 @@ export interface IUser extends mongoose.Document {
   password: string;
   name: string;
   courses: mongoose.Types.ObjectId[];
+  books: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +33,12 @@ const UserSchema = new Schema<IUser>(
       {
         type: Schema.Types.ObjectId,
         ref: "Course",
+      },
+    ],
+    books: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Book",
       },
     ],
   },

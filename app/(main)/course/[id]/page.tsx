@@ -29,6 +29,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [markingComplete, setMarkingComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function loadCourse() {
@@ -36,9 +37,12 @@ export default function CoursePage({ params }: { params: { id: string } }) {
         const courseData = await getCourseWithVideos(params.id);
         setCourse(courseData);
 
-        // Set first video as current if available
+        // Set first uncompleted video as current, or first video if all completed
         if (courseData.videos && courseData.videos.length > 0) {
-          setCurrentVideo(courseData.videos[0]);
+          const firstUncompleted = courseData.videos.find(
+            (v) => !v.isCompleted
+          );
+          setCurrentVideo(firstUncompleted || courseData.videos[0]);
         }
       } catch {
         setError("Failed to load course");
@@ -140,14 +144,35 @@ export default function CoursePage({ params }: { params: { id: string } }) {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/dashboard"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+          <div className="flex items-center justify-between py-3 sm:py-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+              {/* Burger Menu for Mobile */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+                aria-label="Toggle sidebar"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-6 h-6 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+
+              <Link
+                href="/dashboard"
+                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+              >
+                <svg
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -160,19 +185,19 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                   />
                 </svg>
               </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
                   {course.title}
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-600">
                   {course.completedVideos}/{course.totalVideos} videos completed
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                className={`hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   course.sourceType === "google-drive"
                     ? "bg-blue-100 text-blue-800"
                     : "bg-green-100 text-green-800"
@@ -186,10 +211,10 @@ export default function CoursePage({ params }: { params: { id: string } }) {
               <form action={signOut} className="inline">
                 <button
                   type="submit"
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  className="inline-flex items-center px-2 py-1.5 sm:px-3 sm:py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                 >
                   <svg
-                    className="mr-1 w-3 h-3"
+                    className="sm:mr-1 w-3 h-3"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -201,7 +226,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  Logout
+                  <span className="hidden sm:inline">Logout</span>
                 </button>
               </form>
             </div>
@@ -210,12 +235,14 @@ export default function CoursePage({ params }: { params: { id: string } }) {
       </header>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex h-[calc(100vh-73px)] relative">
         {/* Video Sidebar */}
         <VideoSidebar
           videos={course.videos}
           currentVideoId={currentVideo?._id || null}
           onVideoSelect={handleVideoSelect}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Video Player Area */}
@@ -223,7 +250,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
           {currentVideo ? (
             <>
               {/* Video Player */}
-              <div className="flex-1 bg-black flex items-center justify-center p-4">
+              <div className="flex-1 bg-black flex items-center justify-center p-2 sm:p-4">
                 {course.sourceType === "google-drive" ? (
                   <iframe
                     src={
@@ -233,17 +260,18 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                         ? currentVideo.videoUrl + "/preview"
                         : currentVideo.videoUrl
                     }
-                    className="w-full h-full max-w-4xl max-h-[70vh] rounded-lg"
+                    className="w-full h-full max-w-6xl rounded-lg"
                     allow="autoplay; fullscreen; encrypted-media"
                     allowFullScreen
                     title={currentVideo.title || "Google Drive video"}
                   />
                 ) : (
-                  <div className="w-full h-full max-w-4xl max-h-[70vh] bg-black rounded-lg flex items-center justify-center">
+                  <div className="w-full h-full max-w-6xl bg-black rounded-lg flex items-center justify-center">
                     <video
                       key={currentVideo._id}
                       controls
-                      className="w-full h-full max-w-4xl max-h-[70vh] rounded-lg"
+                      controlsList="nodownload"
+                      className="w-full h-full rounded-lg"
                     >
                       <source
                         src={`/api/local-media?path=${encodeURIComponent(
@@ -258,14 +286,14 @@ export default function CoursePage({ params }: { params: { id: string } }) {
               </div>
 
               {/* Video Controls */}
-              <div className="bg-white border-t border-gray-200 p-6">
-                <div className="max-w-4xl mx-auto">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <div className="bg-white border-t border-gray-200 p-4 sm:p-6">
+                <div className="max-w-6xl mx-auto">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 truncate">
                         {currentVideo.title}
                       </h2>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                         <span>
                           Video {currentVideo.order + 1} of {course.totalVideos}
                         </span>
@@ -288,12 +316,12 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
                       {!currentVideo.isCompleted && (
                         <button
                           onClick={handleMarkComplete}
                           disabled={markingComplete}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {markingComplete ? (
                             <>

@@ -44,14 +44,14 @@ export default function CreateCoursePage() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between py-4 sm:py-6">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
               <Link
                 href="/dashboard"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -64,23 +64,23 @@ export default function CreateCoursePage() {
                   />
                 </svg>
               </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
                   Create New Course
                 </h1>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-xs sm:text-sm text-gray-600 hidden sm:block">
                   Set up your video course from local files or Google Drive
                 </p>
               </div>
             </div>
 
-            <form action={signOut} className="inline">
+            <form action={signOut} className="inline ml-2">
               <button
                 type="submit"
-                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-2 py-2 sm:px-3 sm:py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
                 <svg
-                  className="mr-2 w-4 h-4"
+                  className="sm:mr-2 w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -92,7 +92,7 @@ export default function CreateCoursePage() {
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </form>
           </div>
@@ -100,10 +100,10 @@ export default function CreateCoursePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-8 py-6">
-            <form action={handleSubmit} className="space-y-8">
+          <div className="px-4 sm:px-8 py-4 sm:py-6">
+            <form action={handleSubmit} className="space-y-6 sm:space-y-8">
               {/* Course Title */}
               <div>
                 <label
