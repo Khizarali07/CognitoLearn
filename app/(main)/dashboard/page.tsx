@@ -1,13 +1,13 @@
 ﻿import Link from "next/link";
 import AppSidebar from "@/components/AppSidebar";
 import { getUserCourses } from "@/actions/courses";
-import { getUserBooks } from "@/actions/books";
+import { getUserBooks } from "@/actions/bookActions";
 
 export default async function DashboardPage() {
   const courses = await getUserCourses();
-  const books = await getUserBooks();
+  const booksResult = await getUserBooks();
+  const books = booksResult.success ? booksResult.books : [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const courseStats = {
     total: courses.length,
     completed: courses.filter(
@@ -17,13 +17,13 @@ export default async function DashboardPage() {
       (c) => c.completedVideos > 0 && c.completedVideos < c.totalVideos
     ).length,
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const bookStats = {
     total: books.length,
-    completed: books.filter((b: any) => b.isCompleted).length,
-    inProgress: books.filter((b: any) => !b.isCompleted && b.progress > 0)
-      .length,
+    completed: 0, // We don't track completion status yet
+    inProgress: books.length, // All books are considered in progress
   };
+
   const topCourses = [...courses]
     .sort((a, b) => {
       const progressA =
@@ -33,10 +33,8 @@ export default async function DashboardPage() {
       return progressB - progressA;
     })
     .slice(0, 3);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const topBooks = [...books]
-    .sort((a: any, b: any) => b.progress - a.progress)
-    .slice(0, 3);
+
+  const topBooks = books.slice(0, 3); // Just get the first 3 books
   return (
     <div className="flex min-h-screen bg-gray-50">
       <AppSidebar />
@@ -316,49 +314,43 @@ export default async function DashboardPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    topBooks.map((book: any) => (
-                      <Link
-                        key={book._id}
-                        href={`/books/${book._id}`}
-                        className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-6 group"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg p-3">
-                            <svg
-                              className="w-6 h-6 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                              />
-                            </svg>
-                          </div>
-                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                            {book.progress.toFixed(0)}%
-                          </span>
+                  {topBooks.map((book) => (
+                    <Link
+                      key={book.id}
+                      href={`/book/${book.id}`}
+                      className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-6 group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg p-3">
+                          <svg
+                            className="w-6 h-6 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                            />
+                          </svg>
                         </div>
-                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
-                          {book.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Page {book.currentPage} of {book.totalPages}
-                        </p>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full transition-all"
-                            style={{ width: `${book.progress}%` }}
-                          />
-                        </div>
-                      </Link>
-                    ))
-                  }
+                        <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                          Page {book.currentPage}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                        {book.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Last read: Page {book.currentPage}
+                      </p>
+                      <div className="text-xs text-gray-500">
+                        Added {new Date(book.createdAt).toLocaleDateString()}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>

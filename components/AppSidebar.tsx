@@ -75,7 +75,7 @@ export default function AppSidebar() {
       {!isMobileOpen && (
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          className="lg:hidden fixed top-4 right-4 z-50 p-2 rounded-lg bg-white shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
         >
           <svg
             className="w-6 h-6 text-gray-600"
@@ -150,7 +150,7 @@ export default function AppSidebar() {
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     isActive
                       ? "bg-white text-indigo-900 font-semibold shadow-lg"
-                      : "text-indigo-200 hover:bg-white hover:bg-opacity-10 hover:text-white"
+                      : "text-indigo-200 hover:bg-white hover:bg-opacity-10 hover:text-indigo-900"
                   }`}
                 >
                   {item.icon}

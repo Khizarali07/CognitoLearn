@@ -2,12 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 // Routes that require authentication
-const protectedRoutes = ["/dashboard", "/create-course", "/course"];
+const protectedRoutes = [
+  "/dashboard",
+  "/create-course",
+  "/course",
+  "/books",
+  "/book",
+];
 // Routes that should redirect to dashboard if user is logged in
 const authRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Skip middleware for test/demo pages
+  if (pathname.startsWith("/pdf-test")) {
+    return NextResponse.next();
+  }
 
   // Get token from cookies
   const token = request.cookies.get("auth-token")?.value;
@@ -63,7 +74,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - uploads (uploaded files like PDFs)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|uploads).*)",
   ],
 };

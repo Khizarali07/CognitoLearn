@@ -4,7 +4,8 @@ export interface IBook extends mongoose.Document {
   title: string;
   ownerId: mongoose.Types.ObjectId;
   fileName: string;
-  fileUrl: string; // S3 URL or local path
+  fileUrl: string; // Firebase Storage URL
+  storagePath: string; // Firebase Storage path for deletion
   fileSize: number;
   totalPages: number;
   currentPage: number;
@@ -41,6 +42,10 @@ const BookSchema = new Schema<IBook>(
     fileUrl: {
       type: String,
       required: [true, "File URL is required"],
+    },
+    storagePath: {
+      type: String,
+      required: [true, "Storage path is required"],
     },
     fileSize: {
       type: Number,

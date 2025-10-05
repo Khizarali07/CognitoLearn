@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from "react";
 import { getUserCourses, deleteCourse } from "@/actions/courses";
 import Link from "next/link";
 import AppSidebar from "@/components/AppSidebar";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 import toast from "react-hot-toast";
 
 interface Course {
@@ -25,6 +26,16 @@ export default function CoursesPage() {
   >("all");
   const [sortBy, setSortBy] = useState<"progress" | "recent">("progress");
   const [isPending, startTransition] = useTransition();
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    courseId: string;
+    title: string;
+  }>({
+    isOpen: false,
+    courseId: "",
+    title: "",
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadCourses();
@@ -76,19 +87,23 @@ export default function CoursesPage() {
   };
 
   const handleDelete = async (courseId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+    setDeleteModal({ isOpen: true, courseId, title });
+  };
 
-    startTransition(async () => {
-      try {
-        const formData = new FormData();
-        formData.append("courseId", courseId);
-        await deleteCourse(formData);
-        toast.success("Course deleted successfully");
-        loadCourses();
-      } finally {
-        // Delete completed
-      }
-    });
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const formData = new FormData();
+      formData.append("courseId", deleteModal.courseId);
+      await deleteCourse(formData);
+      toast.success("Course deleted successfully");
+      loadCourses();
+      setDeleteModal({ isOpen: false, courseId: "", title: "" });
+    } catch {
+      toast.error("Failed to delete course");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getProgress = (course: Course) => {
@@ -426,6 +441,18 @@ export default function CoursesPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Course"
+        message={`Are you sure you want to delete "${deleteModal.title}"? This will also delete all associated videos. This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        onCancel={() =>
+          setDeleteModal({ isOpen: false, courseId: "", title: "" })
+        }
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

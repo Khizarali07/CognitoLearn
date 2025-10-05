@@ -1,32 +1,37 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { getUserBooks, uploadBook, deleteBook } from "@/actions/books";
+import { getUserBooks, deleteBook } from "@/actions/bookActions";
 import Link from "next/link";
 import AppSidebar from "@/components/AppSidebar";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal";
+import BookUploader from "./components/BookUploader";
 import toast from "react-hot-toast";
 
 interface Book {
-  _id: string;
+  id: string;
   title: string;
-  totalPages: number;
+  storageId: string;
   currentPage: number;
-  progress: number;
-  isCompleted: boolean;
   createdAt: string;
-  lastAccessedAt: string;
 }
 
 export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "in-progress">(
-    "all"
-  );
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [uploadProgress, setUploadProgress] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    bookId: string;
+    title: string;
+  }>({
+    isOpen: false,
+    bookId: "",
+    title: "",
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadBooks();
@@ -34,13 +39,6 @@ export default function BooksPage() {
 
   useEffect(() => {
     let filtered = books;
-
-    // Filter by status
-    if (filterStatus === "in-progress") {
-      filtered = filtered.filter(
-        (book) => !book.isCompleted && book.progress > 0
-      );
-    }
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -50,49 +48,45 @@ export default function BooksPage() {
     }
 
     setFilteredBooks(filtered);
-  }, [books, filterStatus, searchQuery]);
+  }, [books, searchQuery]);
 
   const loadBooks = () => {
     startTransition(async () => {
       const result = await getUserBooks();
-      if (Array.isArray(result)) {
-        setBooks(result as Book[]);
+      if (result.success && result.books) {
+        setBooks(result.books);
+      } else {
+        toast.error(result.error || "Failed to load books");
       }
     });
   };
 
-  const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    setUploadProgress(true);
-
-    try {
-      const result = await uploadBook(formData);
-      if (result.success) {
-        toast.success("Book uploaded successfully!");
-        setShowUploadModal(false);
-        loadBooks();
-        (e.target as HTMLFormElement).reset();
-      } else {
-        toast.error(result.error || "Failed to upload book");
-      }
-    } finally {
-      setUploadProgress(false);
-    }
+  const handleUploadSuccess = () => {
+    setShowUploadModal(false);
+    loadBooks();
+    toast.success("Book uploaded successfully!");
   };
 
   const handleDelete = async (bookId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+    setDeleteModal({ isOpen: true, bookId, title });
+  };
 
-    startTransition(async () => {
-      const result = await deleteBook(bookId);
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteBook(deleteModal.bookId);
       if (result.success) {
         toast.success("Book deleted successfully");
         loadBooks();
+        setDeleteModal({ isOpen: false, bookId: "", title: "" });
       } else {
         toast.error(result.error || "Failed to delete book");
       }
-    });
+    } catch {
+      toast.error("Failed to delete book");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -156,28 +150,6 @@ export default function BooksPage() {
                 </svg>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilterStatus("all")}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  filterStatus === "all"
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                All Books
-              </button>
-              <button
-                onClick={() => setFilterStatus("in-progress")}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  filterStatus === "in-progress"
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                In Progress
-              </button>
-            </div>
           </div>
         </div>
 
@@ -211,9 +183,11 @@ export default function BooksPage() {
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Completed</p>
+                <p className="text-sm text-gray-600">Recently Added</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
-                  {books.filter((b) => b.isCompleted).length}
+                  {books.length > 0
+                    ? books[0].title.substring(0, 15) + "..."
+                    : "None"}
                 </p>
               </div>
               <div className="bg-green-100 rounded-full p-3">
@@ -227,7 +201,7 @@ export default function BooksPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M12 4v16m8-8H4"
                   />
                 </svg>
               </div>
@@ -236,9 +210,9 @@ export default function BooksPage() {
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">In Progress</p>
+                <p className="text-sm text-gray-600">Total Storage</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
-                  {books.filter((b) => !b.isCompleted && b.progress > 0).length}
+                  {books.length} PDFs
                 </p>
               </div>
               <div className="bg-yellow-100 rounded-full p-3">
@@ -252,7 +226,7 @@ export default function BooksPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                   />
                 </svg>
               </div>
@@ -261,7 +235,7 @@ export default function BooksPage() {
         </div>
 
         {/* Books Grid */}
-        {isPending && !uploadProgress ? (
+        {isPending ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           </div>
@@ -284,8 +258,8 @@ export default function BooksPage() {
               No books found
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchQuery || filterStatus !== "all"
-                ? "Try adjusting your filters"
+              {searchQuery
+                ? "Try adjusting your search"
                 : "Get started by uploading a book"}
             </p>
           </div>
@@ -293,10 +267,10 @@ export default function BooksPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredBooks.map((book) => (
               <div
-                key={book._id}
+                key={book.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow overflow-hidden group"
               >
-                <Link href={`/books/${book._id}`} className="block">
+                <Link href={`/book/${book.id}`} className="block">
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg p-3">
@@ -314,40 +288,32 @@ export default function BooksPage() {
                           />
                         </svg>
                       </div>
-                      {book.isCompleted && (
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                          Completed
-                        </span>
-                      )}
+                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                        Page {book.currentPage}
+                      </span>
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                       {book.title}
                     </h3>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <p>
-                        Page {book.currentPage} of {book.totalPages}
-                      </p>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full transition-all"
-                          style={{ width: `${book.progress}%` }}
-                        />
-                      </div>
                       <p className="text-xs text-gray-500">
-                        {book.progress.toFixed(0)}% complete
+                        Last read: Page {book.currentPage}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Added {new Date(book.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                 </Link>
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                   <Link
-                    href={`/books/${book._id}`}
+                    href={`/book/${book.id}`}
                     className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                   >
-                    Continue Reading →
+                    Open Reader →
                   </Link>
                   <button
-                    onClick={() => handleDelete(book._id, book.title)}
+                    onClick={() => handleDelete(book.id, book.title)}
                     className="text-red-600 hover:text-red-700 p-1"
                     title="Delete book"
                   >
@@ -374,74 +340,23 @@ export default function BooksPage() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Upload Book</h2>
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleUpload} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Book Title
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
-                  placeholder="Enter book title"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PDF File
-                </label>
-                <input
-                  type="file"
-                  name="file"
-                  accept=".pdf"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={uploadProgress}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploadProgress ? "Uploading..." : "Upload"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowUploadModal(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <BookUploader
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={handleUploadSuccess}
+        />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Book"
+        message={`Are you sure you want to delete "${deleteModal.title}"? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        onCancel={() =>
+          setDeleteModal({ isOpen: false, bookId: "", title: "" })
+        }
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
