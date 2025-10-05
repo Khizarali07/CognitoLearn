@@ -23,18 +23,30 @@ interface Course {
   videos: Video[];
 }
 
-export default function CoursePage({ params }: { params: { id: string } }) {
+export default function CoursePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const [course, setCourse] = useState<Course | null>(null);
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [courseId, setCourseId] = useState<string>("");
+
+  // Unwrap params promise
+  useEffect(() => {
+    params.then((p) => setCourseId(p.id));
+  }, [params]);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function loadCourse() {
+      if (!courseId) return;
+      
       try {
-        const courseData = await getCourseWithVideos(params.id);
+        const courseData = await getCourseWithVideos(courseId);
         setCourse(courseData);
 
         // Set first uncompleted video as current, or first video if all completed
@@ -52,7 +64,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
     }
 
     loadCourse();
-  }, [params.id]);
+  }, [courseId]);
 
   const handleVideoSelect = (video: Video) => {
     setCurrentVideo(video);
