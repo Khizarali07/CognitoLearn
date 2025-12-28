@@ -5,8 +5,6 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import VideoSidebar from "@/components/VideoSidebar";
 import CourseToolsPanel from "@/components/CourseToolsPanel";
-import VideoSidebar from "@/components/VideoSidebar";
-import CourseToolsPanel from "@/components/CourseToolsPanel";
 import { getCourseWithVideos, markVideoCompleted, updateCourse } from "@/actions/courses";
 import { signOut } from "@/actions/auth";
 import EditModal from "@/components/EditModal";
@@ -45,7 +43,6 @@ export default function CoursePage({
   }, [params]);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);

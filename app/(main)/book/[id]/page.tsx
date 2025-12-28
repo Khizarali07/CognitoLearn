@@ -21,7 +21,6 @@ import {
   createAnnotation,
   getBookAnnotations,
   deleteAnnotation,
-  deleteAnnotation,
   saveAnnotationExplanation,
   updateBook,
 } from "@/actions/bookActions";
