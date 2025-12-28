@@ -5,8 +5,11 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import VideoSidebar from "@/components/VideoSidebar";
 import CourseToolsPanel from "@/components/CourseToolsPanel";
-import { getCourseWithVideos, markVideoCompleted } from "@/actions/courses";
+import VideoSidebar from "@/components/VideoSidebar";
+import CourseToolsPanel from "@/components/CourseToolsPanel";
+import { getCourseWithVideos, markVideoCompleted, updateCourse } from "@/actions/courses";
 import { signOut } from "@/actions/auth";
+import EditModal from "@/components/EditModal";
 
 interface Video {
   _id: string;
@@ -43,8 +46,14 @@ export default function CoursePage({
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    courseId: string;
+    title: string;
+  }>({ isOpen: false, courseId: "", title: "" });
 
   // Reset time on video change
   useEffect(() => {
@@ -241,14 +250,16 @@ export default function CoursePage({
                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                </button>
                
-               <button
-                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Edit Course"
-                  onClick={() => toast("Edit functionality coming soon!", { icon: "🚧" })} 
-               >
-                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-               </button>
-
+               <div className="flex items-center space-x-2">
+                         <button 
+                            onClick={() => course && setEditModal({ isOpen: true, courseId: course._id, title: course.title })}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            title="Edit Course"
+                        >
+                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                    </div>  
+                    
               <span
                 className={`hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   course.sourceType === "google-drive"
@@ -533,6 +544,23 @@ export default function CoursePage({
           )}
         </div>
       </div>
+      
+      {/* Edit Modal */}
+      <EditModal
+        isOpen={editModal.isOpen}
+        title="Edit Course"
+        initialTitle={editModal.title}
+        onClose={() => setEditModal({ isOpen: false, courseId: "", title: "" })}
+        onSave={async (newTitle) => {
+            if (!editModal.courseId) return;
+            const result = await updateCourse(editModal.courseId, newTitle);
+            if (result.success) {
+                setCourse(prev => prev ? { ...prev, title: newTitle } : null);
+            } else {
+                throw new Error(result.error);
+            }
+        }}
+      />
     </div>
   );
 }

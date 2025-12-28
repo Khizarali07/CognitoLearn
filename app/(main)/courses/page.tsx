@@ -1,4 +1,3 @@
-```javascript
 "use client";
 
 import { useState, useTransition, useEffect } from "react";

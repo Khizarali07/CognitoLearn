@@ -21,7 +21,9 @@ import {
   createAnnotation,
   getBookAnnotations,
   deleteAnnotation,
+  deleteAnnotation,
   saveAnnotationExplanation,
+  updateBook,
 } from "@/actions/bookActions";
 import { explainText } from "@/actions/aiActions";
 import { getBookMessages, sendChatMessage } from "@/actions/chatActions";
@@ -31,6 +33,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
+import EditModal from "@/components/EditModal";
 
 interface BookData {
   id: string;
@@ -78,6 +81,11 @@ export default function BookReaderPage() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    bookId: string;
+    title: string;
+  }>({ isOpen: false, bookId: "", title: "" });
 
   // Selection
   const [selectedText, setSelectedText] = useState("");
@@ -594,13 +602,13 @@ export default function BookReaderPage() {
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                  </button>
                                  <div className="flex items-center space-x-1">
-                                   <button 
-                                     onClick={() => toast("Edit functionality coming soon!")}
-                                     className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded"
-                                     title="Edit Book"
-                                   >
-                                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                   </button>
+                                   <button
+                onClick={() => book && setEditModal({ isOpen: true, bookId: book.id, title: book.title })}
+                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Edit Book"
+              >
+                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              </button>
                                  </div>
                               </div>
                            </div>
