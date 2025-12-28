@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { getUserCourses, deleteCourse, getCourseWithVideos, markVideoCompleted, updateCourse } from "@/actions/courses";
+import { getUserCourses, deleteCourse, updateCourse } from "@/actions/courses";
 import Link from "next/link";
 import AppSidebar from "@/components/AppSidebar";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
@@ -25,7 +25,7 @@ export default function CoursesPage() {
   const [filterSource, setFilterSource] = useState<
     "all" | "local" | "google-drive"
   >("all");
-  const [sortBy, setSortBy] = useState<"progress" | "recent">("progress");
+  const [sortBy] = useState<"progress" | "recent">("progress");
   const [isPending, startTransition] = useTransition();
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
@@ -42,7 +42,6 @@ export default function CoursesPage() {
     title: string;
   }>({ isOpen: false, courseId: "", title: "" });
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
 
 
   useEffect(() => {
@@ -285,7 +284,7 @@ export default function CoursesPage() {
 }
 
 // Sub-components
-function StatCard({ title, value, icon }: any) {
+function StatCard({ title, value, icon }: { title: string; value: number; icon: React.ReactNode }) {
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 flex flex-col transition-all hover:shadow-md">
             <div className="flex items-center justify-between mb-2">
@@ -299,7 +298,7 @@ function StatCard({ title, value, icon }: any) {
     )
 }
 
-function FilterButton({ active, onClick, label, icon }: any) {
+function FilterButton({ active, onClick, label, icon }: { active: boolean; onClick: () => void; label: string; icon?: React.ReactNode }) {
     return (
         <button
             onClick={onClick}

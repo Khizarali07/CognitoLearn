@@ -41,7 +41,7 @@ export default function EditModal({
       await onSave(newTitle);
       toast.success("Updated successfully");
       onClose();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update");
     } finally {
       setIsSaving(false);

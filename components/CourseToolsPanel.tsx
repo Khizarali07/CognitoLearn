@@ -6,6 +6,13 @@ import { sendCourseChatMessage } from "@/actions/videoChatActions";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 
+interface Note {
+  _id: string;
+  selectedText: string;
+  timestamp: number;
+  createdAt: string;
+}
+
 interface CourseToolsPanelProps {
   videoId: string;
   videoTitle: string;
@@ -28,7 +35,7 @@ export default function CourseToolsPanel({
   const [activeTab, setActiveTab] = useState<"notes" | "chat">("notes");
   
   // Notes State
-  const [notes, setNotes] = useState<any[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [noteInput, setNoteInput] = useState("");
   const [loadingNotes, setLoadingNotes] = useState(false);
 
@@ -40,19 +47,19 @@ export default function CourseToolsPanel({
 
   // Load Notes
   useEffect(() => {
+    async function loadNotes() {
+        setLoadingNotes(true);
+        const result = await getVideoAnnotations(videoId);
+        if (result.success) {
+          setNotes(result.annotations as Note[]);
+        }
+        setLoadingNotes(false);
+      }
+
     if (videoId && activeTab === "notes") {
       loadNotes();
     }
   }, [videoId, activeTab]);
-
-  async function loadNotes() {
-    setLoadingNotes(true);
-    const result = await getVideoAnnotations(videoId);
-    if (result.success) {
-      setNotes(result.annotations);
-    }
-    setLoadingNotes(false);
-  }
 
   // Create Note
   async function handleAddNote() {
@@ -77,7 +84,7 @@ export default function CourseToolsPanel({
         toast.error("Failed to save note");
     } else {
         // Replace temp with real
-        setNotes(prev => prev.map(n => n._id === tempId ? result.annotation : n));
+        setNotes(prev => prev.map(n => n._id === tempId ? (result.annotation as Note) : n));
     }
   }
 

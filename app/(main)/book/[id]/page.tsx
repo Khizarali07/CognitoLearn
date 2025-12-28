@@ -22,6 +22,7 @@ import {
   getBookAnnotations,
   deleteAnnotation,
   saveAnnotationExplanation,
+
   updateBook,
 } from "@/actions/bookActions";
 import { explainText } from "@/actions/aiActions";
@@ -290,11 +291,10 @@ export default function BookReaderPage() {
     try {
       const result = await deleteAnnotation(annotationId);
       if (!result.success) {
-        // Revert if failed
         setAnnotations(previousAnnotations);
         toast.error(result.error || "Failed to delete");
       }
-    } catch (error) {
+    } catch {
       setAnnotations(previousAnnotations);
       toast.error("Failed to delete");
     }
@@ -308,7 +308,7 @@ export default function BookReaderPage() {
     try {
       await updateReadingProgress(bookId, currentPage);
       toast.success("Bookmarked!");
-    } catch (error) {
+    } catch {
       toast.error("Error saving bookmark");
     }
   };
@@ -343,7 +343,7 @@ export default function BookReaderPage() {
       } else {
          toast.error(result.error || "Failed");
       }
-    } catch (error) {
+    } catch {
       toast.error("AI Error");
     } finally {
       setExplaining(false);
@@ -378,7 +378,7 @@ export default function BookReaderPage() {
             setMessages(prev => prev.filter(m => m.id !== tempId));
             toast.error("Failed to send");
         }
-    } catch (err) {
+    } catch {
         toast.error("Failed to send");
     } finally {
         setSendingMsg(false);
@@ -416,7 +416,14 @@ export default function BookReaderPage() {
                 <span className="text-xs font-medium text-slate-500">Page {currentPage} / {totalPages}</span>
               </div>
             </div>
-            <button onClick={handleBookmark} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-full hover:bg-indigo-100 transition-colors">
+             <button 
+                onClick={() => book && setEditModal({ isOpen: true, bookId: book.id, title: book.title })}
+                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-colors mr-2"
+                title="Edit Book Title"
+             >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+             </button>
+             <button onClick={handleBookmark} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-full hover:bg-indigo-100 transition-colors">
                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                  Bookmark
             </button>
@@ -566,7 +573,7 @@ export default function BookReaderPage() {
                    {selectedText && (
                       <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
                          <p className="text-xs font-bold text-amber-700 mb-2">SELECTED TEXT</p>
-                         <p className="text-sm text-slate-700 italic border-l-2 border-amber-300 pl-3 mb-3 line-clamp-3">"{selectedText}"</p>
+                         <p className="text-sm text-slate-700 italic border-l-2 border-amber-300 pl-3 mb-3 line-clamp-3">&quot;{selectedText}&quot;</p>
                          <div className="flex gap-2">
                             <button onClick={() => handleQuickExplain(selectedText)} className="flex-1 py-1.5 bg-white text-amber-700 text-xs font-bold rounded border border-amber-200 shadow-sm hover:shadow flex items-center justify-center gap-1">
                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
@@ -597,21 +604,10 @@ export default function BookReaderPage() {
                                  <button onClick={() => startChatAboutText(ann.text, ann.id)} className="p-1.5 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded" title="Discuss in Chat">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
                                  </button>
-                                 <button onClick={() => goToAnnotationPage(ann.pageNumber)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded" title="Go to Page">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                 </button>
-                                 <div className="flex items-center space-x-1">
-                                   <button
-                onClick={() => book && setEditModal({ isOpen: true, bookId: book.id, title: book.title })}
-                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                title="Edit Book"
-              >
-                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-              </button>
                                  </div>
                               </div>
                            </div>
-                        </div>
+
                       ))}
                       {annotations.length === 0 && <div className="text-center py-10 text-slate-400 text-sm">Select text to add notes.</div>}
                    </div>
@@ -702,6 +698,21 @@ export default function BookReaderPage() {
            </div>
         </aside>
       </main>
+      {/* Edit Modal */}
+      <EditModal
+        isOpen={editModal.isOpen}
+        title="Edit Book"
+        initialTitle={editModal.title}
+        onClose={() => setEditModal({ isOpen: false, bookId: "", title: "" })}
+        onSave={async (newTitle) => {
+            const result = await updateBook(editModal.bookId, newTitle);
+            if (result.success) {
+                setBook(prev => prev ? { ...prev, title: newTitle } : null);
+            } else {
+                throw new Error(result.error);
+            }
+        }}
+      />
     </div>
   );
 }

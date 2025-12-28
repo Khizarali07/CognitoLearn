@@ -90,7 +90,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                {topCourses.map((course) => (
-                 <CourseCard key={course._id} course={course as any} />
+                 <CourseCard key={course._id} course={course} />
                ))}
             </div>
           )}
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
 }
 
 // Sub-components for cleaner code
-function StatCard({ title, value, subtitle, icon }: any) {
+function StatCard({ title, value, subtitle, icon }: { title: string; value: number; subtitle: string; icon: React.ReactNode }) {
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 flex flex-col transition-all hover:shadow-md">
             <div className="flex items-center justify-between mb-4">
@@ -135,7 +135,7 @@ function StatCard({ title, value, subtitle, icon }: any) {
     )
 }
 
-function SectionHeader({ title, linkHref }: any) {
+function SectionHeader({ title, linkHref }: { title: string; linkHref: string }) {
     return (
         <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
@@ -146,7 +146,7 @@ function SectionHeader({ title, linkHref }: any) {
     )
 }
 
-function EmptyState({ message, actionLink, actionText }: any) {
+function EmptyState({ message, actionLink, actionText }: { message: string; actionLink: string; actionText: string }) {
     return (
         <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
              <p className="text-slate-500 dark:text-slate-400 mb-4 font-medium">{message}</p>

@@ -225,10 +225,7 @@ export default function BooksPage() {
       {showUploadModal && (
         <BookUploader
           onClose={() => setShowUploadModal(false)}
-          onSuccess={() => {
-            setShowUploadModal(false);
-            loadBooks();
-          }}
+          onSuccess={handleUploadSuccess}
         />
       )}
 
@@ -263,7 +260,7 @@ export default function BooksPage() {
   );
 }
 
-function StatCard({ title, value, icon }: any) {
+function StatCard({ title, value, icon }: { title: string; value: number; icon: React.ReactNode }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 flex flex-col transition-all hover:shadow-md">
       <div className="flex items-center justify-between mb-2">
