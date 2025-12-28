@@ -594,7 +594,7 @@ export default function BookReaderPage() {
                    <div className="space-y-3">
                       {annotations.map(ann => (
                         <div key={ann.id} className="group bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
-                           <p className="text-sm font-medium text-slate-800 line-clamp-3 mb-3">"{ann.text}"</p>
+                           <p className="text-sm font-medium text-slate-800 line-clamp-3 mb-3">&quot;{ann.text}&quot;</p>
                            <div className="flex items-center justify-between">
                               <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Page {ann.pageNumber}</span>
                               <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -604,6 +604,12 @@ export default function BookReaderPage() {
                                  <button onClick={() => startChatAboutText(ann.text, ann.id)} className="p-1.5 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded" title="Discuss in Chat">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
                                  </button>
+                                  <button onClick={() => goToAnnotationPage(ann.pageNumber)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded" title="Go to Page">
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                  </button>
+                                  <button onClick={() => handleDeleteAnnotation(ann.id)} className="p-1.5 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded" title="Delete Note">
+                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  </button>
                                  </div>
                               </div>
                            </div>

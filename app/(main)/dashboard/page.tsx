@@ -157,7 +157,13 @@ function EmptyState({ message, actionLink, actionText }: { message: string; acti
     )
 }
 
-function CourseCard({ course }: { course: any }) {
+interface CourseProps {
+    _id: string;
+    title: string;
+    totalVideos: number;
+    completedVideos: number;
+}
+function CourseCard({ course }: { course: CourseProps }) {
     const progress = course.totalVideos > 0 ? ((course.completedVideos / course.totalVideos) * 100).toFixed(0) : 0;
     return (
         <Link href={`/course/${course._id}`} className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-xl hover:border-indigo-100 dark:hover:border-indigo-900 transition-all duration-300">
@@ -182,7 +188,13 @@ function CourseCard({ course }: { course: any }) {
     )
 }
 
-function BookCard({ book }: { book: any }) {
+interface BookProps {
+    id: string;
+    title: string;
+    currentPage: number;
+    createdAt: string;
+}
+function BookCard({ book }: { book: BookProps }) {
     return (
         <Link href={`/book/${book.id}`} className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-xl hover:border-purple-100 dark:hover:border-purple-900 transition-all duration-300">
             <div className="flex justify-between items-start mb-4">

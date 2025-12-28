@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import toast from "react-hot-toast";
 import VideoSidebar from "@/components/VideoSidebar";
 import CourseToolsPanel from "@/components/CourseToolsPanel";
 import { getCourseWithVideos, markVideoCompleted, updateCourse } from "@/actions/courses";
