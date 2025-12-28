@@ -300,6 +300,7 @@ export async function getBookAnnotations(bookId: string) {
         pageNumber: doc.pageNumber,
         selectedText: doc.selectedText,
         color: doc.color,
+        explanation: doc.explanation, // Add explanation field
         createdAt: doc.$createdAt, // Use Appwrite's built-in timestamp
       })),
     };
@@ -345,6 +346,49 @@ export async function deleteAnnotation(annotationId: string) {
     return {
       success: false,
       error: error.message || "Failed to delete annotation",
+    };
+  }
+}
+
+/**
+ * Save AI explanation for an annotation
+ */
+export async function saveAnnotationExplanation(
+  annotationId: string,
+  explanation: string
+) {
+  try {
+    const userId = await getCurrentUserId();
+    const databases = getServerDatabases();
+
+    // Get annotation to verify ownership
+    const annotation = await databases.getDocument(
+      APPWRITE_CONFIG.databaseId,
+      APPWRITE_CONFIG.annotationsCollectionId,
+      annotationId
+    );
+
+    if (annotation.userId !== userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Update annotation with explanation
+    // Note: Ensure your Appwrite collection has an 'explanation' string attribute (large text)
+    await databases.updateDocument(
+      APPWRITE_CONFIG.databaseId,
+      APPWRITE_CONFIG.annotationsCollectionId,
+      annotationId,
+      {
+        explanation: explanation,
+      }
+    );
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Save explanation error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to save explanation",
     };
   }
 }

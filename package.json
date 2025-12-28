@@ -9,11 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@react-pdf-viewer/core": "^3.12.0",
     "@react-pdf-viewer/default-layout": "^3.12.0",
+    "@react-pdf-viewer/page-navigation": "^3.12.0",
+    "@react-pdf-viewer/zoom": "^3.12.0",
+    "@tailwindcss/typography": "^0.5.19",
     "appwrite": "^21.0.0",
     "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
+    "framer-motion": "^12.23.26",
     "googleapis": "^105.0.0",
     "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -27,6 +33,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
+    "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

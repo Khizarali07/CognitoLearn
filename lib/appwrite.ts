@@ -17,6 +17,7 @@ export const APPWRITE_CONFIG = {
   databaseId: "cognitolearn-db",
   booksCollectionId: "books",
   annotationsCollectionId: "annotations",
+  messagesCollectionId: "messages",
   booksBucketId: "user_pdfs",
 };
 
