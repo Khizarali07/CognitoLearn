@@ -10,7 +10,7 @@ import {
 import { ID, Query } from "node-appwrite";
 
 // Helper function to get current user ID from JWT
-async function getCurrentUserId(): Promise<string> {
+export async function getCurrentUserId(): Promise<string> {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth-token")?.value;
 
@@ -454,6 +454,45 @@ export async function deleteBook(bookId: string) {
     return {
       success: false,
       error: error.message || "Failed to delete book",
+    };
+  }
+}
+
+/**
+ * Update a book's title
+ */
+export async function updateBook(bookId: string, newTitle: string) {
+  try {
+    const userId = await getCurrentUserId();
+    const databases = getServerDatabases();
+
+    // Verify ownership
+    const book = await databases.getDocument(
+      APPWRITE_CONFIG.databaseId,
+      APPWRITE_CONFIG.booksCollectionId,
+      bookId
+    );
+
+    if (book.userId !== userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Update title
+    await databases.updateDocument(
+      APPWRITE_CONFIG.databaseId,
+      APPWRITE_CONFIG.booksCollectionId,
+      bookId,
+      {
+        title: newTitle,
+      }
+    );
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update book error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to update book",
     };
   }
 }

@@ -1,9 +1,11 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
 export interface IAnnotation extends mongoose.Document {
-  bookId: mongoose.Types.ObjectId;
+  bookId?: mongoose.Types.ObjectId;
+  videoId?: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  pageNumber: number;
+  pageNumber?: number;
+  timestamp?: number;
   selectedText: string;
   color: string;
   createdAt: Date;
@@ -15,7 +17,13 @@ const AnnotationSchema = new Schema<IAnnotation>(
     bookId: {
       type: Schema.Types.ObjectId,
       ref: "Book",
-      required: true,
+      required: false,
+      index: true,
+    },
+    videoId: {
+      type: Schema.Types.ObjectId,
+      ref: "Video",
+      required: false,
       index: true,
     },
     userId: {
@@ -26,7 +34,11 @@ const AnnotationSchema = new Schema<IAnnotation>(
     },
     pageNumber: {
       type: Number,
-      required: true,
+      required: false,
+    },
+    timestamp: {
+      type: Number,
+      required: false, // in seconds
     },
     selectedText: {
       type: String,
@@ -44,6 +56,7 @@ const AnnotationSchema = new Schema<IAnnotation>(
 
 // Index for faster queries
 AnnotationSchema.index({ bookId: 1, pageNumber: 1 });
+AnnotationSchema.index({ videoId: 1, timestamp: 1 });
 
 const Annotation =
   models.Annotation || model<IAnnotation>("Annotation", AnnotationSchema);

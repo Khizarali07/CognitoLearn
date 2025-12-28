@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import VideoSidebar from "@/components/VideoSidebar";
+import CourseToolsPanel from "@/components/CourseToolsPanel";
 import { getCourseWithVideos, markVideoCompleted } from "@/actions/courses";
 import { signOut } from "@/actions/auth";
 
@@ -40,6 +42,29 @@ export default function CoursePage({
   }, [params]);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Reset time on video change
+  useEffect(() => {
+    setCurrentTime(0);
+  }, [currentVideo]);
+
+  const handleSeek = (time: number) => {
+    if (videoRef.current) {
+        videoRef.current.currentTime = time;
+        videoRef.current.play();
+    }
+    // Note: If using iframe (Google Drive), seeking might not work easily via Ref depending on API.
+    // For local videos, this works perfectly.
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+        setCurrentTime(videoRef.current.currentTime);
+    }
+  };
 
   useEffect(() => {
     async function loadCourse() {
@@ -208,6 +233,22 @@ export default function CoursePage({
             </div>
 
             <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+               <button 
+                onClick={() => setToolsOpen(!toolsOpen)}
+                className={`p-2 rounded-lg transition-colors ${toolsOpen ? "bg-indigo-100 text-indigo-600" : "text-gray-400 hover:text-gray-600"}`}
+                title="Notes & AI Assistant"
+               >
+                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+               </button>
+               
+               <button
+                  className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Edit Course"
+                  onClick={() => toast("Edit functionality coming soon!", { icon: "🚧" })} 
+               >
+                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+               </button>
+
               <span
                 className={`hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   course.sourceType === "google-drive"
@@ -257,6 +298,17 @@ export default function CoursePage({
           onClose={() => setSidebarOpen(false)}
         />
 
+        {/* Tools Panel (Chat/Notes) */}
+        <CourseToolsPanel 
+            videoId={currentVideo?._id || ""}
+            videoTitle={currentVideo?.title || ""}
+            courseTitle={course.title}
+            currentTime={currentTime}
+            onSeek={handleSeek}
+            isOpen={toolsOpen}
+            onClose={() => setToolsOpen(false)}
+        />
+
         {/* Video Player Area */}
         <div className="flex-1 flex flex-col">
           {currentVideo ? (
@@ -281,6 +333,8 @@ export default function CoursePage({
                   <div className="w-full h-full max-w-6xl bg-black rounded-lg flex items-center justify-center">
                     <video
                       key={currentVideo._id}
+                      ref={videoRef}
+                      onTimeUpdate={handleTimeUpdate}
                       controls
                       controlsList="nodownload"
                       className="w-full h-full rounded-lg"

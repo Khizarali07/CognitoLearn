@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Tooltip,
     Viewer,
     Worker,
     ScrollMode,
@@ -92,7 +91,7 @@ export default function BookReaderPage() {
   // Full Screen Toggle
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-        fullScreenRef.current?.requestFullscreen().catch(err => {
+        fullScreenRef.current?.requestFullscreen().catch(() => {
             toast.error("Error attempting full screen");
         });
     } else {
@@ -562,9 +561,17 @@ export default function BookReaderPage() {
                          <p className="text-xs font-bold text-amber-700 mb-2">SELECTED TEXT</p>
                          <p className="text-sm text-slate-700 italic border-l-2 border-amber-300 pl-3 mb-3 line-clamp-3">"{selectedText}"</p>
                          <div className="flex gap-2">
-                            <button onClick={() => handleQuickExplain(selectedText)} className="flex-1 py-1.5 bg-white text-amber-700 text-xs font-bold rounded border border-amber-200 shadow-sm hover:shadow">⚡ Quick Explain</button>
-                            <button onClick={() => startChatAboutText(selectedText)} className="flex-1 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded shadow-sm hover:bg-indigo-700">💬 Chat</button>
-                            <button onClick={() => setSelectedText("")} className="px-3 py-1.5 text-slate-400 hover:bg-slate-100 rounded">✕</button>
+                            <button onClick={() => handleQuickExplain(selectedText)} className="flex-1 py-1.5 bg-white text-amber-700 text-xs font-bold rounded border border-amber-200 shadow-sm hover:shadow flex items-center justify-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                Quick Explain
+                            </button>
+                            <button onClick={() => startChatAboutText(selectedText)} className="flex-1 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded shadow-sm hover:bg-indigo-700 flex items-center justify-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                                Chat
+                            </button>
+                            <button onClick={() => setSelectedText("")} className="px-3 py-1.5 text-slate-400 hover:bg-slate-100 rounded">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                          </div>
                       </div>
                    )}
@@ -586,9 +593,15 @@ export default function BookReaderPage() {
                                  <button onClick={() => goToAnnotationPage(ann.pageNumber)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 rounded" title="Go to Page">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                  </button>
-                                 <button onClick={() => handleDeleteAnnotation(ann.id)} className="p-1.5 text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 rounded" title="Delete">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                 </button>
+                                 <div className="flex items-center space-x-1">
+                                   <button 
+                                     onClick={() => toast("Edit functionality coming soon!")}
+                                     className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded"
+                                     title="Edit Book"
+                                   >
+                                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                   </button>
+                                 </div>
                               </div>
                            </div>
                         </div>
@@ -654,7 +667,9 @@ export default function BookReaderPage() {
                      )}
                      {sendingMsg && (
                         <div className="flex gap-3">
-                           <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center"><span className="animate-spin text-xs">⏳</span></div>
+                           <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                               <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                           </div>
                            <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none text-slate-500 text-sm">Thinking...</div>
                         </div>
                      )}

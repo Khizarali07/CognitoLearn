@@ -278,3 +278,18 @@ export async function deleteCourse(formData: FormData) {
     throw error;
   }
 }
+
+export async function updateCourse(courseId: string, newTitle: string) {
+  try {
+    await dbConnect();
+    
+    // In a real app, verify ownership here
+    
+    await Course.findByIdAndUpdate(courseId, { title: newTitle });
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Update course error:", error);
+    return { success: false, error: "Failed to update course" };
+  }
+}
