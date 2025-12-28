@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 interface EditModalProps {
@@ -20,6 +20,12 @@ export default function EditModal({
 }: EditModalProps) {
   const [newTitle, setNewTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setNewTitle(initialTitle);
+    }
+  }, [isOpen, initialTitle]);
 
   if (!isOpen) return null;
 
