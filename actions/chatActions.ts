@@ -10,7 +10,7 @@ import { cookies } from "next/headers";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
 export async function getCurrentUserId() {
   const session = (await cookies()).get("session");

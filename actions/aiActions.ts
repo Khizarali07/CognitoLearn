@@ -2,14 +2,14 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
 export async function explainText(text: string) {
   try {
-    if (!process.env.GOOGLE_API_KEY) {
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
       return {
         success: false,
-        error: "GOOGLE_API_KEY is not configured",
+        error: "GOOGLE_GEMINI_API_KEY is not configured",
       };
     }
 

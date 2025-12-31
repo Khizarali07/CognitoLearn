@@ -2,8 +2,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config({ path: '.env.local' });
 
 async function listModels() {
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-  console.log("Checking models with key ending in: ..." + process.env.GOOGLE_API_KEY.slice(-4));
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
+  console.log("Checking models with key ending in: ..." + process.env.GOOGLE_GEMINI_API_KEY.slice(-4));
 
   try {
     // For listing models, we might need a model instance or use a specific admin API, 

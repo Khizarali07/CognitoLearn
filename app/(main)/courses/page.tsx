@@ -123,12 +123,12 @@ export default function CoursesPage() {
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
       <AppSidebar />
 
-      <main className="flex-1 lg:ml-64 p-8">
-        <div className="max-w-7xl mx-auto space-y-10">
+      <main className="flex-1 lg:ml-64 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-10">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
                 <div>
-                     <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">All Courses</h1>
+                     <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">All Courses</h1>
                      <p className="mt-2 text-lg text-slate-600 dark:text-slate-400">Manage and track your video courses</p>
                 </div>
                 <Link
@@ -141,7 +141,7 @@ export default function CoursesPage() {
             </div>
 
              {/* Stats */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                  <StatCard 
                     title="Total Courses" 
                     value={courses.length} 
@@ -192,7 +192,7 @@ export default function CoursesPage() {
                      <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">No courses found matching your criteria</p>
                  </div>
              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {filteredCourses.map(course => {
                         const progress = getProgress(course);
                         return (
