@@ -20,8 +20,8 @@ export async function sendCourseChatMessage(
       throw new Error("Google API Key not configured");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.5-flash as gemini-pro might be deprecated or unavailable in v1beta
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use gemini-2.5-flash as it is available and performant
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Construct a system prompt with course context
     const contextPrompt = `You are an AI assistant for the course "${
