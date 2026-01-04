@@ -2,12 +2,12 @@
 
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
-import {
-  getServerDatabases,
-  getServerStorage,
-  APPWRITE_CONFIG,
-} from "@/lib/appwrite";
-import { ID, Query } from "node-appwrite";
+import fs from "fs/promises";
+import path from "path";
+import { connectToDB } from "@/lib/mongoose";
+import Book from "@/models/Book";
+import Annotation from "@/models/Annotation";
+import mongoose from "mongoose";
 
 // Helper function to get current user ID from JWT
 export async function getCurrentUserId(): Promise<string> {
@@ -33,10 +33,11 @@ export async function getCurrentUserId(): Promise<string> {
 }
 
 /**
- * Upload a PDF book to Appwrite Storage and create database entry
+ * Upload a PDF book to Local Filesystem and create database entry
  */
 export async function uploadBookPDF(formData: FormData) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
 
     // Extract form data
@@ -58,40 +59,51 @@ export async function uploadBookPDF(formData: FormData) {
       return { success: false, error: "File size must be less than 20MB" };
     }
 
-    console.log("📤 Uploading to Appwrite Storage:", bookTitle);
+    console.log("📤 Uploading to Local Storage:", bookTitle);
 
-    // Upload file to Appwrite Storage
-    const storage = getServerStorage();
-    const fileId = ID.unique();
+    // Create uploads directory if it doesn't exist
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "books");
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      await fs.mkdir(uploadDir, { recursive: true });
+    }
 
-    const uploadedFile = await storage.createFile(
-      APPWRITE_CONFIG.booksBucketId,
-      fileId,
-      pdfFile
-    );
+    // Generate unique filename
+    const fileId = new mongoose.Types.ObjectId().toString();
+    const fileName = `${fileId}-${pdfFile.name.replace(
+      /[^a-zA-Z0-9.-]/g,
+      "_"
+    )}`;
+    const filePath = path.join(uploadDir, fileName);
+    const fileUrl = `/uploads/books/${fileName}`;
 
-    console.log("✅ File uploaded to Appwrite:", uploadedFile.$id);
+    // Write file to disk
+    const buffer = Buffer.from(await pdfFile.arrayBuffer());
+    await fs.writeFile(filePath, buffer);
+
+    console.log("✅ File saved to:", filePath);
 
     // Create database entry
-    const databases = getServerDatabases();
-    const bookDocument = await databases.createDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      ID.unique(),
-      {
-        userId,
-        title: bookTitle,
-        storageId: uploadedFile.$id,
-        currentPage: 1,
-      }
-    );
+    const newBook = await Book.create({
+      title: bookTitle,
+      ownerId: userId,
+      fileName: fileName,
+      fileUrl: fileUrl,
+      storagePath: filePath,
+      fileSize: pdfFile.size,
+      totalPages: 0, // Will be updated by client or worker
+      currentPage: 1,
+      uploadedAt: new Date(),
+      lastAccessedAt: new Date(),
+    });
 
-    console.log("✅ Book document created:", bookDocument.$id);
+    console.log("✅ Book document created:", newBook._id);
 
     return {
       success: true,
-      bookId: bookDocument.$id,
-      title: bookDocument.title,
+      bookId: newBook._id.toString(),
+      title: newBook.title,
     };
   } catch (error: any) {
     console.error("Upload book error:", error);
@@ -107,23 +119,19 @@ export async function uploadBookPDF(formData: FormData) {
  */
 export async function getUserBooks() {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    const response = await databases.listDocuments(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      [Query.equal("userId", userId), Query.orderDesc("$createdAt")]
-    );
+    const books = await Book.find({ ownerId: userId }).sort({ createdAt: -1 });
 
     return {
       success: true,
-      books: response.documents.map((doc) => ({
-        id: doc.$id,
+      books: books.map((doc) => ({
+        id: doc._id.toString(),
         title: doc.title,
-        storageId: doc.storageId,
+        storageId: doc.fileName, // Using fileName as storageId for compatibility
         currentPage: doc.currentPage || 1,
-        createdAt: doc.$createdAt, // Use Appwrite's built-in timestamp
+        createdAt: doc.createdAt?.toISOString(),
       })),
     };
   } catch (error: any) {
@@ -141,17 +149,17 @@ export async function getUserBooks() {
  */
 export async function getBookById(bookId: string) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    const book = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId
-    );
+    const book = await Book.findById(bookId);
+
+    if (!book) {
+      return { success: false, error: "Book not found" };
+    }
 
     // Verify the book belongs to the current user
-    if (book.userId !== userId) {
+    if (book.ownerId.toString() !== userId) {
       return {
         success: false,
         error: "Unauthorized: This book does not belong to you",
@@ -161,11 +169,12 @@ export async function getBookById(bookId: string) {
     return {
       success: true,
       book: {
-        id: book.$id,
+        id: book._id.toString(),
         title: book.title,
-        storageId: book.storageId,
+        storageId: book.fileName,
         currentPage: book.currentPage || 1,
-        createdAt: book.$createdAt, // Use Appwrite's built-in timestamp
+        createdAt: book.createdAt?.toISOString(),
+        fileUrl: book.fileUrl, // Return the URL for the frontend
       },
     };
   } catch (error: any) {
@@ -185,29 +194,18 @@ export async function updateReadingProgress(
   pageNumber: number
 ) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    // Verify ownership
-    const book = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId
-    );
+    const book = await Book.findOne({ _id: bookId, ownerId: userId });
 
-    if (book.userId !== userId) {
-      return { success: false, error: "Unauthorized" };
+    if (!book) {
+      return { success: false, error: "Unauthorized or Book not found" };
     }
 
-    // Update current page
-    await databases.updateDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId,
-      {
-        currentPage: pageNumber,
-      }
-    );
+    book.currentPage = pageNumber;
+    book.lastAccessedAt = new Date();
+    await book.save();
 
     return { success: true };
   } catch (error: any) {
@@ -228,42 +226,31 @@ export async function createAnnotation(
   selectedText: string
 ) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    // Verify book ownership
-    const book = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId
-    );
+    const book = await Book.findOne({ _id: bookId, ownerId: userId });
 
-    if (book.userId !== userId) {
-      return { success: false, error: "Unauthorized" };
+    if (!book) {
+      return { success: false, error: "Unauthorized or Book not found" };
     }
 
-    // Create annotation
-    const annotation = await databases.createDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.annotationsCollectionId,
-      ID.unique(),
-      {
-        bookId,
-        userId,
-        pageNumber,
-        selectedText,
-        color: "yellow",
-      }
-    );
+    const annotation = await Annotation.create({
+      bookId,
+      userId,
+      pageNumber,
+      selectedText,
+      color: "yellow",
+    });
 
     return {
       success: true,
       annotation: {
-        id: annotation.$id,
+        id: annotation._id.toString(),
         pageNumber: annotation.pageNumber,
         selectedText: annotation.selectedText,
         color: annotation.color,
-        createdAt: annotation.$createdAt, // Use Appwrite's built-in timestamp
+        createdAt: annotation.createdAt?.toISOString(),
       },
     };
   } catch (error: any) {
@@ -280,28 +267,23 @@ export async function createAnnotation(
  */
 export async function getBookAnnotations(bookId: string) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    const response = await databases.listDocuments(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.annotationsCollectionId,
-      [
-        Query.equal("bookId", bookId),
-        Query.equal("userId", userId),
-        Query.orderAsc("pageNumber"),
-      ]
-    );
+    const annotations = await Annotation.find({
+      bookId,
+      userId,
+    }).sort({ pageNumber: 1 });
 
     return {
       success: true,
-      annotations: response.documents.map((doc) => ({
-        id: doc.$id,
+      annotations: annotations.map((doc) => ({
+        id: doc._id.toString(),
         pageNumber: doc.pageNumber,
         selectedText: doc.selectedText,
         color: doc.color,
-        explanation: doc.explanation, // Add explanation field
-        createdAt: doc.$createdAt, // Use Appwrite's built-in timestamp
+        explanation: (doc as any).explanation, // Cast if explanation is not in interface yet
+        createdAt: doc.createdAt?.toISOString(),
       })),
     };
   } catch (error: any) {
@@ -319,26 +301,19 @@ export async function getBookAnnotations(bookId: string) {
  */
 export async function deleteAnnotation(annotationId: string) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    // Get annotation to verify ownership
-    const annotation = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.annotationsCollectionId,
-      annotationId
-    );
+    const annotation = await Annotation.findOne({
+      _id: annotationId,
+      userId,
+    });
 
-    if (annotation.userId !== userId) {
-      return { success: false, error: "Unauthorized" };
+    if (!annotation) {
+      return { success: false, error: "Unauthorized or Annotation not found" };
     }
 
-    // Delete annotation
-    await databases.deleteDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.annotationsCollectionId,
-      annotationId
-    );
+    await Annotation.deleteOne({ _id: annotationId });
 
     return { success: true };
   } catch (error: any) {
@@ -358,30 +333,21 @@ export async function saveAnnotationExplanation(
   explanation: string
 ) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    // Get annotation to verify ownership
-    const annotation = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.annotationsCollectionId,
-      annotationId
-    );
+    const annotation = await Annotation.findOne({
+      _id: annotationId,
+      userId,
+    });
 
-    if (annotation.userId !== userId) {
-      return { success: false, error: "Unauthorized" };
+    if (!annotation) {
+      return { success: false, error: "Unauthorized or Annotation not found" };
     }
 
-    // Update annotation with explanation
-    // Note: Ensure your Appwrite collection has an 'explanation' string attribute (large text)
-    await databases.updateDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.annotationsCollectionId,
-      annotationId,
-      {
-        explanation: explanation,
-      }
-    );
+    // Using any to bypass TS check if interface is missing it
+    (annotation as any).explanation = explanation;
+    await annotation.save();
 
     return { success: true };
   } catch (error: any) {
@@ -398,55 +364,29 @@ export async function saveAnnotationExplanation(
  */
 export async function deleteBook(bookId: string) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
-    const storage = getServerStorage();
 
-    // Get book to verify ownership and get storageId
-    const book = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId
-    );
+    const book = await Book.findOne({ _id: bookId, ownerId: userId });
 
-    if (book.userId !== userId) {
-      return { success: false, error: "Unauthorized" };
+    if (!book) {
+      return { success: false, error: "Unauthorized or Book not found" };
     }
 
     // Delete file from storage
-    if (book.storageId) {
+    if (book.storagePath) {
       try {
-        await storage.deleteFile(APPWRITE_CONFIG.booksBucketId, book.storageId);
+        await fs.unlink(book.storagePath);
       } catch (error) {
-        console.error("Failed to delete file from storage:", error);
+        console.error("Failed to delete file from disk:", error);
       }
     }
 
     // Delete all annotations for this book
-    try {
-      const annotations = await databases.listDocuments(
-        APPWRITE_CONFIG.databaseId,
-        APPWRITE_CONFIG.annotationsCollectionId,
-        [Query.equal("bookId", bookId)]
-      );
-
-      for (const annotation of annotations.documents) {
-        await databases.deleteDocument(
-          APPWRITE_CONFIG.databaseId,
-          APPWRITE_CONFIG.annotationsCollectionId,
-          annotation.$id
-        );
-      }
-    } catch (error) {
-      console.error("Failed to delete annotations:", error);
-    }
+    await Annotation.deleteMany({ bookId });
 
     // Delete book document
-    await databases.deleteDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId
-    );
+    await Book.deleteOne({ _id: bookId });
 
     return { success: true };
   } catch (error: any) {
@@ -463,29 +403,17 @@ export async function deleteBook(bookId: string) {
  */
 export async function updateBook(bookId: string, newTitle: string) {
   try {
+    await connectToDB();
     const userId = await getCurrentUserId();
-    const databases = getServerDatabases();
 
-    // Verify ownership
-    const book = await databases.getDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId
-    );
+    const book = await Book.findOne({ _id: bookId, ownerId: userId });
 
-    if (book.userId !== userId) {
-      return { success: false, error: "Unauthorized" };
+    if (!book) {
+      return { success: false, error: "Unauthorized or Book not found" };
     }
 
-    // Update title
-    await databases.updateDocument(
-      APPWRITE_CONFIG.databaseId,
-      APPWRITE_CONFIG.booksCollectionId,
-      bookId,
-      {
-        title: newTitle,
-      }
-    );
+    book.title = newTitle;
+    await book.save();
 
     return { success: true };
   } catch (error: any) {

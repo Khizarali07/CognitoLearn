@@ -8,6 +8,7 @@ export interface IAnnotation extends mongoose.Document {
   timestamp?: number;
   selectedText: string;
   color: string;
+  explanation?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +48,10 @@ const AnnotationSchema = new Schema<IAnnotation>(
     color: {
       type: String,
       default: "#FFEB3B", // Yellow highlight color
+    },
+    explanation: {
+      type: String,
+      required: false,
     },
   },
   {

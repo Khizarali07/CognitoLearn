@@ -20,6 +20,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-src 'self' https://drive.google.com https://accounts.google.com https://*.google.com;",
+          },
+        ],
+      },
+      {
         source: "/uploads/books/:path*",
         headers: [
           {

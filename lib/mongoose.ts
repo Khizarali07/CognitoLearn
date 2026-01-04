@@ -55,4 +55,5 @@ async function dbConnect(): Promise<Connection> {
   return cached.conn;
 }
 
+export const connectToDB = dbConnect;
 export default dbConnect;
