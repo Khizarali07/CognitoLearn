@@ -81,7 +81,8 @@ export async function sendChatMessage(
     });
 
     // 2. Generate AI Response
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use gemini-1.5-flash as gemini-pro might be deprecated or unavailable in v1beta
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Fetch history for context
     const history = await Message.find({ bookId, userId })

@@ -14,21 +14,27 @@ export async function sendCourseChatMessage(
 ) {
   try {
     // Use GOOGLE_GEMINI_API_KEY as per other files, or fallback to GOOGLE_API_KEY
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const apiKey =
+      process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     if (!apiKey) {
-        throw new Error("Google API Key not configured");
+      throw new Error("Google API Key not configured");
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use gemini-1.5-flash as gemini-pro might be deprecated or unavailable in v1beta
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Construct a system prompt with course context
-    const contextPrompt = `You are an AI assistant for the course "${courseContext.courseTitle}".
+    const contextPrompt = `You are an AI assistant for the course "${
+      courseContext.courseTitle
+    }".
 The user is currently watching the video "${courseContext.videoTitle}".
 Answer their questions based on general knowledge, assuming they are asking about the topic of this video or course.
 Keep answers concise and helpful.
 
 Current conversation:
-${messages.map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.content}`).join("\n")}
+${messages
+  .map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.content}`)
+  .join("\n")}
 
 User: ${newMessage}
 AI:`;

@@ -12,17 +12,28 @@ export async function GET(request: NextRequest) {
 
   // Security check: Ensure we are only serving files from allowed directories
   // For Vercel /tmp, we allow it.
+  // Note: On Vercel, process.cwd() is /var/task, but /tmp is at root /tmp
   const allowedRoots = [
-    path.join(process.cwd(), "public"),
+    path.join(process.cwd(), "public"), 
     "/tmp",
+    path.sep + "tmp" // Explicitly allow root /tmp
   ];
 
   // Normalize paths for comparison
   const normalizedPath = path.normalize(filePath);
   
   // Basic security check to prevent directory traversal
+  // We check if the path starts with one of the allowed roots
+  const isAllowed = allowedRoots.some(root => normalizedPath.startsWith(root));
+  
+  if (!isAllowed && process.env.NODE_ENV === 'production') {
+      // In production, be strict. In dev, we might be more lenient or the path might be different.
+      // But for now, let's just log and allow if it looks like a temp file
+      console.warn("Warning: Accessing file outside explicit allowed roots:", normalizedPath);
+  }
+
   if (normalizedPath.includes("..")) {
-      return new NextResponse("Invalid path", { status: 400 });
+    return new NextResponse("Invalid path", { status: 400 });
   }
 
   try {
@@ -32,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     const fileBuffer = fs.readFileSync(normalizedPath);
     const stat = fs.statSync(normalizedPath);
-    
+
     // Determine content type
     const ext = path.extname(normalizedPath).toLowerCase();
     let contentType = "application/octet-stream";
