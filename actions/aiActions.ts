@@ -13,7 +13,7 @@ export async function explainText(text: string) {
       };
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Explain the following text clearly and concisely, providing context and definition where necessary. If it's a specific term, define it. If it's a concept, explain it simply.\n\nText: "${text}"`;
 

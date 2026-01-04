@@ -113,6 +113,7 @@ export async function uploadBookPDF(formData: FormData) {
       fileName: fileName,
       fileUrl: fileUrl,
       storagePath: filePath,
+      fileData: buffer, // Store in DB for Vercel persistence
       fileSize: pdfFile.size,
       totalPages: 0, // Will be updated by client or worker
       currentPage: 1,

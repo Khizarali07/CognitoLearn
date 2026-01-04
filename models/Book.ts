@@ -6,6 +6,7 @@ export interface IBook extends mongoose.Document {
   fileName: string;
   fileUrl: string; // Firebase Storage URL
   storagePath: string; // Firebase Storage path for deletion
+  fileData?: Buffer; // Binary data for Vercel persistence
   fileSize: number;
   totalPages: number;
   currentPage: number;
@@ -46,6 +47,11 @@ const BookSchema = new Schema<IBook>(
     storagePath: {
       type: String,
       required: [true, "Storage path is required"],
+    },
+    fileData: {
+      type: Buffer,
+      required: false,
+      select: false, // Do not return by default to keep queries light
     },
     fileSize: {
       type: Number,
