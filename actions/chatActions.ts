@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { connectToDB } from "@/lib/mongoose";
 import Message from "@/models/Message";
+import Annotation from "@/models/Annotation";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import mongoose from "mongoose";
 
@@ -98,7 +99,17 @@ export async function sendChatMessage(
       history: chatHistory,
     });
 
-    const result = await chat.sendMessage(content);
+    let finalContent = content;
+
+    // If there's an annotation, fetch it and append context
+    if (annotationId) {
+      const annotation = await Annotation.findById(annotationId);
+      if (annotation) {
+        finalContent = `Context: The user is asking about the following text from the book: "${annotation.selectedText}"\n\nUser Question: ${content}`;
+      }
+    }
+
+    const result = await chat.sendMessage(finalContent);
     const responseText = result.response.text();
 
     // 3. Save AI Message
