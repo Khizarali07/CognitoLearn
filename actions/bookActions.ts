@@ -61,12 +61,26 @@ export async function uploadBookPDF(formData: FormData) {
 
     console.log("📤 Uploading to Local Storage:", bookTitle);
 
-    // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "books");
+    // Determine upload directory based on environment
+    // On Vercel (production), we can only write to /tmp, but those files are ephemeral.
+    // For a persistent solution on Vercel, you MUST use Vercel Blob or S3.
+    // However, to fix the "ENOENT" error for now, we will use /tmp if public/uploads fails.
+    
+    let uploadDir = path.join(process.cwd(), "public", "uploads", "books");
+    let isTmp = false;
+
     try {
       await fs.access(uploadDir);
     } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
+      try {
+        await fs.mkdir(uploadDir, { recursive: true });
+      } catch (err) {
+        // Fallback to /tmp for Vercel (Note: Files will be lost on redeploy/cold start)
+        console.warn("⚠️ Could not create public/uploads, falling back to /tmp");
+        uploadDir = path.join("/tmp", "uploads", "books");
+        await fs.mkdir(uploadDir, { recursive: true });
+        isTmp = true;
+      }
     }
 
     // Generate unique filename
@@ -76,7 +90,13 @@ export async function uploadBookPDF(formData: FormData) {
       "_"
     )}`;
     const filePath = path.join(uploadDir, fileName);
-    const fileUrl = `/uploads/books/${fileName}`;
+    
+    // If using /tmp, we need a way to serve it. 
+    // Since Next.js can't serve static files from /tmp easily without a custom route,
+    // we will store the absolute path and create a route to read it.
+    const fileUrl = isTmp 
+        ? `/api/local-media?path=${encodeURIComponent(filePath)}` 
+        : `/uploads/books/${fileName}`;
 
     // Write file to disk
     const buffer = Buffer.from(await pdfFile.arrayBuffer());

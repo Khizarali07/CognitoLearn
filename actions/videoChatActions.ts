@@ -2,8 +2,6 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
-
 interface ChatMessage {
   role: "user" | "ai";
   content: string;
@@ -15,7 +13,13 @@ export async function sendCourseChatMessage(
   courseContext: { courseTitle: string; videoTitle: string }
 ) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // Use GOOGLE_GEMINI_API_KEY as per other files, or fallback to GOOGLE_API_KEY
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+        throw new Error("Google API Key not configured");
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     // Construct a system prompt with course context
     const contextPrompt = `You are an AI assistant for the course "${courseContext.courseTitle}".

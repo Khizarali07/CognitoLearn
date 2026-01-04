@@ -165,7 +165,7 @@ export default function AppSidebar() {
             <form action={signOut}>
               <button
                 type="submit"
-                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-indigo-200 hover:bg-white hover:bg-opacity-10 hover:text-white transition-all duration-200"
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-indigo-200 hover:bg-opacity-10 hover:text-white transition-all duration-200"
               >
                 <svg
                   className="w-5 h-5"
