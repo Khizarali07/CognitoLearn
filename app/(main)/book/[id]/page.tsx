@@ -450,7 +450,7 @@ export default function BookReaderPage() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden flex flex-col">
+    <div className="h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden flex flex-col">
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
         <div className="max-w-[1920px] mx-auto px-4 h-16 flex items-center justify-between">
@@ -733,10 +733,10 @@ export default function BookReaderPage() {
           </div>
 
           {/* CONTENT */}
-          <div className="flex-1 overflow-y-auto p-0 scroll-smooth">
+          <div className="flex-1 overflow-hidden flex flex-col relative">
             {/* --- NOTES TAB --- */}
             {activeTab === "notes" && (
-              <div className="p-5 space-y-6">
+              <div className="p-5 space-y-6 overflow-y-auto h-full scroll-smooth">
                 {/* Quick Explain Panel */}
                 <AnimatePresence>
                   {(explaining || explanation) && (
